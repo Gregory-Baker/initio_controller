@@ -16,8 +16,7 @@ import rospy
 # from geometry_msgs.msg import Twist
 
 # Set GPIO Modes
-GPIO.setmode(GPIO.BOARD)
-GPIO.setwarnings(False)
+
 
 def _clip(value, minimum, maximum):
   if value < minimum:
@@ -98,14 +97,25 @@ class Motor:
       time.sleep(float(delay)/1000)
 
 class Driver:
-  
+
+  def __init__(self):
+    GPIO.setmode(GPIO.BOARD)
+    GPIO.setwarnings(False)
+    
+    self.motor_rf = Motor([33,32,31,29])
+
+  def drive(self, speed):
+    self.motor_rf.set_speed(speed)
+
   
       
 if __name__ == '__main__':
-  desbot = Motor([33,32,31,29])
+  desbot = Driver([33,32,31,29])
   print "Could I kindly touch you for a speed between -100 and 100"
   speed = int(input())
-  desbot.set_speed(speed)
-  time.sleep(5)
+  print "For how long?"
+  duration = int(input())
+  desbot.drive(speed)
+  time.sleep(duration)
   desbot.cleanup()
 
