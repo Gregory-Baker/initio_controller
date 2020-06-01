@@ -100,9 +100,7 @@ class Driver:
 
   # Motor pins is [[motor_pins_lf], [motor_pins_lf], [motor_pins_lf], [motor_pins_lf]]
   def __init__(self, motor_pins):
-    GPIO.setmode(GPIO.BOARD)
-    GPIO.setwarnings(False)
-    
+
     self.motor_lf = Motor(motor_pins[0])
     self.motor_lb = Motor(motor_pins[1])
     self.motor_rf = Motor(motor_pins[2])
@@ -171,13 +169,14 @@ class Driver:
   
       
 if __name__ == '__main__':
+  GPIO.setmode(GPIO.BOARD)
+  GPIO.setwarnings(False)
   lf = [16,18,22,7]
   lb = [15,13,12,11]
   rf = [33,32,31,29]
   rb = [38,37,36,35]
   desbot = Driver([lf, lb, rf, rb])
-  print "Begin motor test?"
-  holding = int(input())
+  print "Motor Test"
   duration = 3
   desbot.forward
   time.sleep(duration)
