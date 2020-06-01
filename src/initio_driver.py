@@ -164,7 +164,7 @@ class Driver:
       print "Speed outside 0 - 100 range"
     print "Speed: " + self.speed
 
-  def cleanup(self, speed):
+  def cleanup(self):
     for motor in self.motors:
       self.stop()
       motor.cleanup()
@@ -177,7 +177,7 @@ if __name__ == '__main__':
   rb = [38,37,36,35]
   desbot = Driver([lf, lb, rf, rb])
   print "Begin motor test?"
-  input()
+  holding = int(input())
   duration = 3
   desbot.forward
   time.sleep(duration)
