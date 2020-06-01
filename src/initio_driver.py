@@ -124,13 +124,13 @@ class Driver:
     for motor in self.motors:
       motor.set_speed(self.speed)
 
-  def left_turn(self):
+  def turn_left(self):
     for motor in self.motors_left:
       motor.set_speed(-self.speed)
     for motor in self.motors_right:
       motor.set_speed(self.speed)
 
-  def right_turn(self):
+  def turn_right(self):
     for motor in self.motors_left:
       motor.set_speed(self.speed)
     for motor in self.motors_right:
@@ -176,7 +176,8 @@ if __name__ == '__main__':
   rf = [33,32,31,29]
   rb = [38,37,36,35]
   desbot = Driver([lf, lb, rf, rb])
-  print "Motor test"
+  print "Begin motor test?"
+  input()
   duration = 3
   desbot.forward
   time.sleep(duration)
