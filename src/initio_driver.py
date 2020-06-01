@@ -52,7 +52,7 @@ class Motor:
     self.delay_min = 1.0    # ms
     self.delay_max = 6.0    # ms
 
-    self.end_flag = false
+    self.end_flag = False
 
     f = threading.Thread(target = self.move)
     f.daemon = True
@@ -121,9 +121,8 @@ class Driver:
 
 
   def forward(self):
-    self.motor_rf.set_speed(self.speed)
-#    for motor in self.motors:
-#      motor.set_speed(self.speed)
+    for motor in self.motors:
+      motor.set_speed(self.speed)
 
   def reverse(self):
     for motor in self.motors:
@@ -144,7 +143,7 @@ class Driver:
   def stop(self):
     for motor in self.motors:
       motor.set_speed(0)
-      motor.end_flag = true
+      motor.end_flag = True
 
   def set_speed(self, speed):
     if (0 < speed < 100):
@@ -171,7 +170,9 @@ class Driver:
     print "Speed: " + self.speed
 
   def cleanup(self):
-    self.stop()     
+    self.stop()
+    for motor in self.motors:
+      motor.end_flag = True 
     GPIO.cleanup()
   
       
@@ -185,13 +186,13 @@ if __name__ == '__main__':
   desbot = Driver([lf, lb, rf, rb])
   print "Motor Test"
   duration = 3
-  desbot.forward
+  desbot.forward()
   time.sleep(duration)
-  desbot.reverse
+  desbot.reverse()
   time.sleep(duration)
-  desbot.turn_left
+  desbot.turn_left()
   time.sleep(duration)
-  desbot.turn_right
+  desbot.turn_right()
   time.sleep(duration)
   desbot.cleanup()
 
