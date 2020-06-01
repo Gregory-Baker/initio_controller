@@ -13,7 +13,7 @@
 # Import all necessary libraries
 import RPi.GPIO as GPIO, sys, threading, time, os, subprocess
 import rospy
-# from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist
 
 # Set GPIO Modes
 
@@ -98,24 +98,93 @@ class Motor:
 
 class Driver:
 
-  def __init__(self):
+  # Motor pins is [[motor_pins_lf], [motor_pins_lf], [motor_pins_lf], [motor_pins_lf]]
+  def __init__(self, motor_pins):
     GPIO.setmode(GPIO.BOARD)
     GPIO.setwarnings(False)
     
-    self.motor_rf = Motor([33,32,31,29])
+    self.motor_lf = Motor(motor_pins[0])
+    self.motor_lb = Motor(motor_pins[1])
+    self.motor_rf = Motor(motor_pins[2])
+    self.motor_rb = Motor(motor_pins[3])
 
-  def drive(self, speed):
-    self.motor_rf.set_speed(speed)
+    self.motors = [self.motor_lf, self.motor_lb, self.motor_rf, self.motor_rb]
 
+    self.motors_left = [self.motor_lf, self.motor_lb]
+    self.motors_right = [self.motor_rf, self.motor_rb]
+
+    self.speed = 100
+
+
+  def forward(self):
+    for motor in self.motors:
+      motor.set_speed(self.speed)
+
+  def reverse(self):
+    for motor in self.motors:
+      motor.set_speed(self.speed)
+
+  def left_turn(self):
+    for motor in self.motors_left:
+      motor.set_speed(-self.speed)
+    for motor in self.motors_right:
+      motor.set_speed(self.speed)
+
+  def right_turn(self):
+    for motor in self.motors_left:
+      motor.set_speed(self.speed)
+    for motor in self.motors_right:
+      motor.set_speed(-self.speed)
+
+  def stop(self):
+    for motor in self.motors:
+      motor.set_speed(0)
+
+  def set_speed(self, speed):
+    if (0 < speed < 100):
+      self.speed = speed
+    else:
+      print "Speed value must be between 0 - 100"
+
+  def increase_speed(self):
+    if (self.speed >= 90):
+      self.speed = 100
+    elif (0 <= self.speed < 90):
+      self.speed += 10
+    else:
+      print "Speed outside 0 - 100 range"
+    print "Speed: " + self.speed
+
+  def decrease_speed(self):
+    if (self.speed <= 10):
+      self.speed = 0
+    elif (10 < self.speed < 100):
+      self.speed -= 10
+    else:
+      print "Speed outside 0 - 100 range"
+    print "Speed: " + self.speed
+
+  def cleanup(self, speed):
+    for motor in self.motors:
+      self.stop()
+      motor.cleanup()
   
       
 if __name__ == '__main__':
-  desbot = Driver([33,32,31,29])
-  print "Could I kindly touch you for a speed between -100 and 100"
-  speed = int(input())
-  print "For how long?"
-  duration = int(input())
-  desbot.drive(speed)
+  lf = [16,18,22,7]
+  lb = [15,13,12,11]
+  rf = [33,32,31,29]
+  rb = [38,37,36,35]
+  desbot = Driver([lf, lb, rf, rb])
+  print "Motor test"
+  duration = 3
+  desbot.forward
+  time.sleep(duration)
+  desbot.reverse
+  time.sleep(duration)
+  desbot.turn_left
+  time.sleep(duration)
+  desbot.turn_right
   time.sleep(duration)
   desbot.cleanup()
 
