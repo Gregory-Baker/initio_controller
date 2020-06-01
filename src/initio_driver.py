@@ -115,8 +115,9 @@ class Driver:
 
 
   def forward(self):
-    for motor in self.motors:
-      motor.set_speed(self.speed)
+    self.motor_rf.set_speed(self.speed)
+#    for motor in self.motors:
+#      motor.set_speed(self.speed)
 
   def reverse(self):
     for motor in self.motors:
@@ -165,7 +166,7 @@ class Driver:
   def cleanup(self):
     for motor in self.motors:
       self.stop()
-      motor.cleanup()
+      GPIO.cleanup()
   
       
 if __name__ == '__main__':
