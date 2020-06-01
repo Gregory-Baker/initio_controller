@@ -52,6 +52,8 @@ class Motor:
     self.delay_min = 1.0    # ms
     self.delay_max = 6.0    # ms
 
+    self.end_flag = false
+
     f = threading.Thread(target = self.move)
     f.daemon = True
     f.start()
@@ -96,6 +98,10 @@ class Motor:
       self.step()
       time.sleep(float(delay)/1000)
 
+      if self.end_flag:
+        self.end_flag = False
+        break
+
 class Driver:
 
   # Motor pins is [[motor_pins_lf], [motor_pins_lf], [motor_pins_lf], [motor_pins_lf]]
@@ -138,6 +144,7 @@ class Driver:
   def stop(self):
     for motor in self.motors:
       motor.set_speed(0)
+      motor.end_flag = true
 
   def set_speed(self, speed):
     if (0 < speed < 100):
@@ -164,9 +171,8 @@ class Driver:
     print "Speed: " + self.speed
 
   def cleanup(self):
-    for motor in self.motors:
-      self.stop()
-      GPIO.cleanup()
+    self.stop()     
+    GPIO.cleanup()
   
       
 if __name__ == '__main__':
