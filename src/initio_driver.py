@@ -28,7 +28,7 @@ def _clip(value, minimum, maximum):
 
 class Motor:
   def __init__(self, motor_pins):
-    
+
     self.motor_pins = motor_pins
 
     for pin in self.motor_pins:
@@ -45,10 +45,10 @@ class Motor:
                 [0,0,0,1]]
 
     self.step_count = 8
-    self.cur_step = 0                 
+    self.cur_step = 0
     self.speed_percent = 0  # -100 -> 100
     self.direction = 0
-  
+
     self.delay_min = 1.0    # ms
     self.delay_max = 6.0    # ms
 
@@ -67,7 +67,7 @@ class Motor:
     if (index == maximum and direction == 1):
       return 0
     if (index < 0):
-      return (maximum-1) 
+      return (maximum-1)
     return index
 
   def speed_to_delay(self, speed_percent):
@@ -87,10 +87,10 @@ class Motor:
     elif (self.speed_percent > 0):
       return 1
     return 0
-  
+
   def set_speed(self, speed):
     self.speed_percent = speed
-    
+
   def move(self):
     while True:
       delay = self.speed_to_delay(self.speed_percent)
@@ -105,94 +105,89 @@ class Motor:
 class Driver:
 
   # Motor pins is [[motor_pins_lf], [motor_pins_lf], [motor_pins_lf], [motor_pins_lf]]
-  def __init__(self, motor_pins):
+  def __init__(self):
+    GPIO.setmode(GPIO.BOARD)
+    GPIO.setwarnings(False)
 
-    self.motor_lf = Motor(motor_pins[0])
-    self.motor_lb = Motor(motor_pins[1])
-    self.motor_rf = Motor(motor_pins[2])
-    self.motor_rb = Motor(motor_pins[3])
+    self._motor_lf = Motor([16,18,22,7])
+    self._motor_lb = Motor([15,13,12,11])
+    self._motor_rf = Motor([33,32,31,29])
+    self._motor_rb = Motor([38,37,36,35])
 
-    self.motors = [self.motor_lf, self.motor_lb, self.motor_rf, self.motor_rb]
+    self.motors = [self._motor_lf, self._motor_lb, self._motor_rf, self._motor_rb]
 
-    self.motors_left = [self.motor_lf, self.motor_lb]
-    self.motors_right = [self.motor_rf, self.motor_rb]
+    self.motors_left = [self._motor_lf, self._motor_lb]
+    self.motors_right = [self._motor_rf, self._motor_rb]
+
+    self._left_speed_percent = 0
+    self._right_speed_percent = 0
 
     self.speed = 100
 
+    rospy.init_node("initio_driver")
 
-  def forward(self):
-    for motor in self.motors:
-      motor.set_speed(self.speed)
+    self._last_received = rospy.get_time()
+    self._timeout = rospy.get_param('~timeout', 2)
+    self._rate = rospy.get_param('~rate', 10)
+    self._max_speed = rospy.get_param('~max_speed', 0.5)
+    self._wheel_base = rospy.get_param('~wheel_base', 0.134)
+    self._wheel_base_multiplier = rospy.get_param('~wheel_base_multiplier', 1)
 
-  def reverse(self):
-    for motor in self.motors:
-      motor.set_speed(self.speed)
+    rospy.Subscriber('cmd_vel', Twist, self._velocity_received_callback)
 
-  def turn_left(self):
-    for motor in self.motors_left:
-      motor.set_speed(-self.speed)
-    for motor in self.motors_right:
-      motor.set_speed(self.speed)
+  def _velocity_received_callback(self, message):
+    """Handle new velocity command message"""
 
-  def turn_right(self):
-    for motor in self.motors_left:
-      motor.set_speed(self.speed)
-    for motor in self.motors_right:
-      motor.set_speed(-self.speed)
+    self._last_received = rospy.get_time()
 
-  def stop(self):
-    for motor in self.motors:
-      motor.set_speed(0)
-      motor.end_flag = True
+   # extract linear and angular velocities from the message
+    linear = message.linear.x
+    angular = message.angular.z
 
-  def set_speed(self, speed):
-    if (0 < speed < 100):
-      self.speed = speed
-    else:
-      print "Speed value must be between 0 - 100"
+    # Calculate the wheel speeds in m/s
+    left_speed = linear - angular*self._wheel_base*self._wheel_base_multiplier/2
+    right_speed = linear + angular*self._wheel_base*self._wheel_base_multiplier/2
 
-  def increase_speed(self):
-    if (self.speed >= 90):
-      self.speed = 100
-    elif (0 <= self.speed < 90):
-      self.speed += 10
-    else:
-      print "Speed outside 0 - 100 range"
-    print "Speed: " + self.speed
+    # Calculate speed percent of left and right motors
+    self._left_speed_percent = 100 * left_speed/self._max_speed
+    self._right_speed_percent = 100 * right_speed/self._max_speed
 
-  def decrease_speed(self):
-    if (self.speed <= 10):
-      self.speed = 0
-    elif (10 < self.speed < 100):
-      self.speed -= 10
-    else:
-      print "Speed outside 0 - 100 range"
-    print "Speed: " + self.speed
+  def run(self):
+    """The control loop of the driver."""
+
+    rate = rospy.Rate(self._rate)
+
+    while not rospy.is_shutdown():
+
+      # Stop robot if no commands sent recently
+      delay = rospy.get_time() - self._last_received
+
+      if delay < self._timeout:
+        for motor in self.motors_left:
+	  motor.set_speed(self._left_speed_percent)
+        for motor in self.motors_right:
+	  motor.set_speed(self._right_speed_percent)
+      else:
+	for motor in self.motors:
+	  motor.set_speed(0)
+
+      rate.sleep()
+
+    print ("Exiting initio driver")
 
   def cleanup(self):
-    self.stop()
     for motor in self.motors:
       motor.end_flag = True 
     GPIO.cleanup()
-  
-      
+
+def main():
+  driver = Driver()
+  driver.run()
+  driver.cleanup()
+
+
+
 if __name__ == '__main__':
-  GPIO.setmode(GPIO.BOARD)
-  GPIO.setwarnings(False)
-  lf = [16,18,22,7]
-  lb = [15,13,12,11]
-  rf = [33,32,31,29]
-  rb = [38,37,36,35]
-  desbot = Driver([lf, lb, rf, rb])
-  print "Motor Test"
-  duration = 3
-  desbot.forward()
-  time.sleep(duration)
-  desbot.reverse()
-  time.sleep(duration)
-  desbot.turn_left()
-  time.sleep(duration)
-  desbot.turn_right()
-  time.sleep(duration)
-  desbot.cleanup()
+  print("Running initio driver")
+  main()
 
