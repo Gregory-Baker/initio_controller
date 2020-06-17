@@ -11,7 +11,7 @@
 #======================================================================
 
 # Import all necessary libraries
-import RPi.GPIO as GPIO, sys, threading, time, os, subprocess, math
+import jetson.GPIO as GPIO, sys, threading, time, os, subprocess, math
 import rospy
 from geometry_msgs.msg import Twist
 
