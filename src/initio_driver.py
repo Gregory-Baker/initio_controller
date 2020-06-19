@@ -11,7 +11,7 @@
 #======================================================================
 
 # Import all necessary libraries
-import jetson.GPIO as GPIO, sys, threading, time, os, subprocess, math
+import Jetson.GPIO as GPIO, sys, threading, time, os, subprocess, math
 import rospy
 from geometry_msgs.msg import Twist
 
@@ -116,7 +116,7 @@ class Driver:
   def __init__(self):
     # Set GPIO Mode
     GPIO.setmode(GPIO.BOARD)
-    GPIO.setwarnings(False)
+    # GPIO.setwarnings(False)
 
     # Set GPIO pins of stepper motors
     self._motor_lf = Motor([16,18,22,7])
