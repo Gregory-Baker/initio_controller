@@ -63,8 +63,10 @@ class Motor:
 
   # Shutdown motor thread and clean GPIO
   def cleanup(self):
-    motor.end_flag=True
-    GPIO.cleanup()
+    self.end_flag=True
+    time.sleep(0.1)
+    GPIO.output(self.motor_pins, GPIO.LOW)
+    GPIO.cleanup(self.motor_pins)
 
   # Get next step index
   def cycle(self, index, direction, maximum):
@@ -197,8 +199,11 @@ class Driver:
 
   def cleanup(self):
     for motor in self.motors:
-      motor.end_flag = True
+     motor.end_flag = True 
+     motor.cleanup()
+    time.sleep(0.1)
     GPIO.cleanup()
+    print "GPIO cleanup"
 
 def main():
   driver = Driver()
