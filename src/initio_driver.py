@@ -16,15 +16,6 @@ import rospy
 from geometry_msgs.msg import Twist
 
 
-
-def _clip(value, minimum, maximum):
-  if value < minimum:
-    return minimum
-  elif value > maximum:
-    return maximum
-  return value
-
-
 class Motor:
   def __init__(self, motor_pins):
 
@@ -135,6 +126,10 @@ class Driver:
     self._left_ang_speed = 0
     self._right_ang_speed = 0
 
+    # Variables for robot target speed
+    self.linear_speed = 0
+    self.angular_speed = 0
+
     rospy.init_node("initio_driver")
 
     # Get ros parameters
@@ -147,10 +142,10 @@ class Driver:
     self._wheel_base = rospy.get_param('~wheel_base', 0.134)
     self._wheel_base_multiplier = rospy.get_param('~wheel_base_multiplier', 1.1)
 
-    rospy.Subscriber('cmd_vel', Twist, self._velocity_received_callback)
+    rospy.Subscriber('cmd_vel', Twist, self.velocity_received_callback)
 
 
-  def _velocity_received_callback(self, message):
+  def velocity_received_callback(self, message):
     """Handle new velocity command message"""
 
     self._last_received = rospy.get_time()
@@ -158,6 +153,12 @@ class Driver:
     # extract linear and angular velocities from the message
     linear = message.linear.x
     angular = message.angular.z
+
+    if (linear == self.linear_speed and angular == self.angular_speed):
+      return
+    else:
+      self.linear_speed = linear
+      self.angular_speed = angular
 
     # Calculate the wheel speeds in m/s
     left_speed = linear - angular*self._wheel_base*self._wheel_base_multiplier/2
@@ -168,9 +169,13 @@ class Driver:
     right_ang_speed = right_speed/(self._wheel_radius*self._wheel_radius_multiplier)
 
     # Limit speed to between min/max speed of motor
-    self._left_ang_speed = _clip(left_ang_speed, -self._max_motor_speed, self._max_motor_speed)
-    self._right_ang_speed = _clip(right_ang_speed, -self._max_motor_speed, self._max_motor_speed)
+    self._left_ang_speed = self.clip_speed(left_ang_speed, -self._max_motor_speed, self._max_motor_speed)
+    self._right_ang_speed = self.clip_speed(right_ang_speed, -self._max_motor_speed, self._max_motor_speed)
 
+    if (self._left_ang_speed != left_ang_speed):
+      print "Left wheel speed limited to {} rad/sec".format(self._left_ang_speed)
+    if (self._right_ang_speed != right_ang_speed):
+      print "Right wheel speed limited to {} rad/sec".format(self._right_ang_speed)
 
   def run(self):
     """The control loop of the driver."""
@@ -196,6 +201,15 @@ class Driver:
       rate.sleep()
 
     print ("Exiting initio driver")
+
+
+  def clip_speed(self, value, minimum, maximum):
+    if value < minimum:
+      return minimum
+    elif value > maximum:
+      return maximum
+    return value
+
 
   def cleanup(self):
     for motor in self.motors:
